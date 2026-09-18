@@ -1,0 +1,501 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "wouter";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Camera,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  CircleHelp,
+  Clock3,
+  Compass,
+  FileText,
+  Flame,
+  Globe2,
+  Headphones,
+  Languages,
+  Layers3,
+  Landmark,
+  LockKeyhole,
+  Map,
+  MapPin,
+  Menu,
+  Mic2,
+  Moon,
+  Play,
+  Radio,
+  Route as RouteIcon,
+  Search,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  Timer,
+  UserRound,
+  Volume2,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+
+const IMG = {
+  city: "/media/city-of-david.jpg",
+  dome: "/media/dome-of-rock.jpg",
+  oldCity: "/media/old-city.jpg",
+  heritage: "/media/islamic-heritage.jpg",
+};const VIDEO = {
+  mamluk: "/media/mamluk-jerusalem-complete.mp4",
+  westernWallOttoman: "/media/western-wall-ottoman.mp4",
+  constantinian: "/media/constantinian-jerusalem-documentary.mp4",
+  aqsa100Years: "/media/al-aqsa-100-years.mp4",
+};
+
+
+
+
+
+type Site = {
+  slug: string;
+  name: string;
+  arabic: string;
+  period: string;
+  category: string;
+  image: string;
+  accent: string;
+  description: string;
+  fact: string;
+  location: string;
+};
+
+const SITES: Site[] = [
+  {
+    slug: "dome-of-the-rock",
+    name: "Dome of the Rock",
+    arabic: "قبة الصخرة",
+    period: "Umayyad Jerusalem · 691 CE",
+    category: "Architecture",
+    image: IMG.dome,
+    accent: "gold",
+    description: "A luminous octagonal sanctuary at the heart of Jerusalem's sacred plateau.",
+    fact: "Its foundation inscription is among the earliest surviving examples of monumental Islamic epigraphy.",
+    location: "Temple Mount / al-Ḥaram al-Sharīf",
+  },
+  {
+    slug: "city-of-david",
+    name: "City of David",
+    arabic: "مدينة داود",
+    period: "Iron Age · c. 1000 BCE",
+    category: "Archaeology",
+    image: IMG.city,
+    accent: "clay",
+    description: "The ridge where layers of settlement trace Jerusalem's earliest urban stories.",
+    fact: "The ancient ridge is associated with the oldest continuously inhabited core of Jerusalem.",
+    location: "Silwan ridge",
+  },
+  {
+    slug: "old-city-walls",
+    name: "Old City Walls",
+    arabic: "أسوار البلدة القديمة",
+    period: "Ottoman Jerusalem · 1538–1541",
+    category: "History",
+    image: IMG.oldCity,
+    accent: "olive",
+    description: "A 16th-century city wall that still frames movement through Jerusalem today.",
+    fact: "The present walls were commissioned during the reign of Sultan Suleiman the Magnificent.",
+    location: "Old City perimeter",
+  },
+  {
+    slug: "al-aqsa-mamluk",
+    name: "Al-Aqsa in Mamluk Jerusalem",
+    arabic: "المسجد الأقصى في القدس المملوكية",
+    period: "Mamluk Jerusalem · 13th–15th century",
+    category: "Live documentary",
+    image: IMG.dome,
+    accent: "gold",
+    description: "Step into a documentary view of al-Aqsa and Jerusalem during the Mamluk period.",
+    fact: "The Mamluk period left a visible architectural and institutional imprint around Jerusalem's sacred plateau.",
+    location: "al-Ḥaram al-Sharīf",
+  },
+  {
+    slug: "western-wall-ottoman",
+    name: "Western Wall in Ottoman Jerusalem",
+    arabic: "حائط البراق بالعهد العثماني",
+    period: "Ottoman Jerusalem · 1517–1917",
+    category: "Historical documentary",
+    image: IMG.oldCity,
+    accent: "gold",
+    description: "Explore the Western Wall and its surrounding quarter during the Ottoman period.",
+    fact: "Jerusalem was governed by the Ottoman Empire for approximately four centuries, from 1517 until 1917.",
+    location: "Western Wall · Old City",
+  },  {
+    slug: "constantinian-jerusalem",
+    name: "Constantinian Jerusalem",
+    arabic: "القدس في العهد القسطنطيني",
+    period: "Constantinian Jerusalem · 4th century CE",
+    category: "Historical documentary",
+    image: IMG.oldCity,
+    accent: "gold",
+    description: "Step into Jerusalem during the Constantinian period and explore the transformation of the city’s sacred landscape.",
+    fact: "The Constantinian period transformed Jerusalem's Christian landscape through major monumental building projects.",
+    location: "Jerusalem · Old City",
+  },
+
+];
+
+const SOURCES = [
+  { institution: "UNESCO World Heritage Centre", title: "Old City of Jerusalem and Its Walls", type: "Heritage institution", date: "1981" },
+  { institution: "The Israel Museum, Jerusalem", title: "Jerusalem: A History of the City", type: "Museum collection", date: "2024" },
+  { institution: "British Museum", title: "Jerusalem Through Time", type: "Academic collection", date: "2022" },
+  { institution: "A. W. Lawrence Archive", title: "The City of David and Early Jerusalem", type: "Archive / field record", date: "1936" },
+];
+
+const navItems = [
+  ["Explore", "/explore"],
+  ["Scan", "/scan"],
+  ["Map", "/explore#map"],
+  ["Timeline", "/timeline"],
+  ["Routes", "/routes"],
+  ["Passport", "/passport"],
+  ["Ask ATHAR", "/ask"],
+] as const;
+
+function scrollToId(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function Brand({ dark = false }: { dark?: boolean }) {
+  return (
+    <Link
+  href="/"
+  className={`brand ${dark ? "brand-dark" : ""}`}
+  aria-label="ATHAR home"
+>
+  <span className="brand-mark"><span>أ</span></span>
+
+  <div className="brand-copy">
+    <b>ATHAR</b>
+    <small>Jerusalem through time</small>
+  </div>
+</Link>
+
+  );
+}
+
+function StatusPill({ children, tone = "gold" }: { children: React.ReactNode; tone?: "gold" | "dark" | "light" }) {
+  return <span className={`status-pill status-${tone}`}><span className="status-dot" />{children}</span>;
+}
+
+function MediaLabel({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) {
+  return <span className={`media-label ${dark ? "media-label-dark" : ""}`}>{children}</span>;
+}
+
+function SiteCard({ site, onOpen }: { site: Site; onOpen: () => void }) {
+  return (
+    <article className="site-card">
+      <div className="site-card-image-wrap">
+        <img src={site.image} alt={`${site.name} in Jerusalem`} className="site-card-image" />
+        <div className="site-card-overlay" />
+        <MediaLabel dark>{site.category}</MediaLabel>
+        <button className="round-arrow" onClick={onOpen} aria-label={`Explore ${site.name}`}><ArrowUpRight size={19} /></button>
+      </div>
+      <div className="site-card-body">
+        <div className="eyebrow">{site.period}</div>
+        <h3>{site.name}</h3>
+        <p>{site.description}</p>
+        <div className="site-card-meta"><MapPin size={13} /> {site.location}</div>
+      </div>
+    </article>
+  );
+}
+
+function Header({ onMenu }: { onMenu: () => void }) {
+  const [location] = useLocation();
+  const [lang, setLang] = useState<"en" | "ar">("en");
+  const isHome = location === "/";
+  return (
+    <header className={`site-header ${isHome ? "site-header-over-hero" : ""}`}>
+      <Brand dark={isHome} />
+      <nav className="desktop-nav" aria-label="Main navigation">
+        {navItems.map(([label, href]) => <Link key={label} href={href} className={location.startsWith(href.split("#")[0]) && href !== "/explore#map" ? "active" : ""}>{label}</Link>)}
+      </nav>
+      <div className="header-actions">
+        <button className={`lang-toggle ${isHome ? "lang-dark" : ""}`} onClick={() => setLang(lang === "en" ? "ar" : "en")} aria-label="Switch language"><Languages size={16} /> {lang === "en" ? "عربي" : "English"}</button>
+        <Link href="/scan" className={`header-scan ${isHome ? "header-scan-dark" : ""}`}><Camera size={15} /> Scan a site</Link>
+        <button className={`mobile-menu ${isHome ? "mobile-menu-dark" : ""}`} onClick={onMenu} aria-label="Open navigation"><Menu size={20} /></button>
+      </div>
+    </header>
+  );
+}
+
+function MobileMenu({ close }: { close: () => void }) {
+  return <div className="mobile-menu-panel">
+    <div className="mobile-menu-head"><Brand /><button onClick={close} aria-label="Close navigation"><X size={22} /></button></div>
+    <nav>{navItems.map(([label, href]) => <Link onClick={close} key={label} href={href}>{label}<ArrowRight size={18} /></Link>)}</nav>
+    <div className="mobile-menu-footer"><span>العربية</span><span>EN</span></div>
+  </div>;
+}
+
+function HomeHero() {
+  return <section className="hero">
+    <div className="hero-backdrop" />
+    <div className="hero-noise" />
+    <div className="hero-content page-width">
+      <StatusPill tone="light">A living archive of Jerusalem</StatusPill>
+      <h1>Don't just visit<br /><em>Jerusalem.</em><br /><span>Experience its history.</span></h1>
+      <p className="hero-lede">See the past. Hear its story. Experience its legacy.</p>
+      <div className="hero-ctas"><Link href="/explore" className="button button-gold">Explore Jerusalem <ArrowRight size={17} /></Link><Link href="/scan" className="button button-ghost-light"><Camera size={16} /> Scan a site</Link></div>
+      <div className="hero-foot"><div className="hero-scroll"><span className="scroll-line" /> Scroll to discover</div><div className="hero-index">01 <span>/</span> 04</div></div>
+    </div>
+    <div className="hero-caption"><span>View from the Old City walls</span><span>31°46′N · 35°14′E</span></div>
+  </section>;
+}
+
+function StorySection() {
+  return <section className="story-section page-width section-pad" id="story">
+    <div className="story-kicker"><span className="section-number">01</span><span className="rule" /><span>Why ATHAR</span></div>
+    <div className="story-grid">
+      <div><h2>Every stone<br /><em>remembers.</em></h2></div>
+      <div className="story-copy"><p className="lead-copy">A visitor sees a wall. A doorway. A view. But the present is only the latest layer.</p><p>What if you could stand in the same place and see the city as it once was? Hear the voices that shaped it? Understand the lives lived between these stones?</p><button className="text-button" onClick={() => scrollToId("explore")} >Discover how it works <ArrowRight size={16} /></button></div>
+    </div>
+    <div className="today-past">
+      <div className="today-panel"><img src={IMG.oldCity} alt="Jerusalem today" /><div className="today-label">Today <span>2026</span></div></div>
+      <div className="past-panel"><div className="past-art"><div className="past-sky" /><div className="past-hill" /><div className="past-walls" /><div className="past-path" /></div><div className="past-label">Past <span>c. 691 CE · Interpretation</span></div><div className="reconstruction-stamp">AI-GENERATED<br />RECONSTRUCTION</div></div>
+    </div>
+    <div className="story-bottom"><span><ShieldCheck size={16} /> Facts are always sourced</span><span><Sparkles size={16} /> Interpretations are always labeled</span><span><Globe2 size={16} /> Arabic + English, built in</span></div>
+  </section>;
+}
+
+function ExploreSection({ openSite }: { openSite: (site: Site) => void }) {
+  return <section className="explore-section dark-section section-pad" id="explore">
+    <div className="page-width">
+      <div className="section-head light-head"><div><div className="story-kicker"><span className="section-number">02</span><span className="rule" /><span>Begin your journey</span></div><h2>Three sites.<br /><em>Infinite stories.</em></h2></div><p>Start with three carefully researched places. Each one opens a different door into Jerusalem's layered past.</p></div>
+      <div className="site-grid">{SITES.map(site => <SiteCard key={site.slug} site={site} onOpen={() => openSite(site)} />)}</div>
+      <div className="explore-cta"><div><p className="eyebrow">More of Jerusalem, coming soon</p><h3>From the stones you can see<br />to the stories you can't.</h3></div><Link href="/about" className="button button-outline-light">Our approach <ArrowUpRight size={17} /></Link></div>
+    </div>
+  </section>;
+}
+
+function MapSection({ openSite }: { openSite: (site: Site) => void }) {
+  return <section className="map-section page-width section-pad" id="map">
+    <div className="map-head"><div><div className="story-kicker"><span className="section-number">03</span><span className="rule" /><span>Explore Jerusalem</span></div><h2>A city written<br /><em>in layers.</em></h2></div><div className="map-tools"><button className="map-tool active"><Map size={15} /> All sites</button><button className="map-tool"><Landmark size={15} /> Sacred</button><button className="map-tool"><Layers3 size={15} /> Archaeology</button></div></div>
+    <div className="map-canvas"><div className="map-grid" /><div className="map-river" /><div className="map-city-label old">OLD CITY</div><div className="map-city-label city-david">CITY OF DAVID</div><div className="map-pin pin-1" onClick={() => openSite(SITES[0])}><span /><b>01</b><div>Dome of the Rock</div></div><div className="map-pin pin-2" onClick={() => openSite(SITES[1])}><span /><b>02</b><div>City of David</div></div><div className="map-pin pin-3" onClick={() => openSite(SITES[2])}><span /><b>03</b><div>Old City Walls</div></div><div className="map-compass">N<br /><span>＋</span><br />S</div><div className="map-scale">500 m &nbsp; ━━━━━</div></div>
+    <div className="map-footer"><span><MapPin size={15} /> 3 heritage sites mapped</span><Link href="/routes" className="text-button">Build a route <ArrowRight size={16} /></Link></div>
+  </section>;
+}
+
+function TimelineSection({ openSite }: { openSite: (site: Site) => void }) {
+  const [active, setActive] = useState(0);
+  const periods = [{ date: "c. 1000 BCE", title: "The first city", desc: "An urban ridge takes shape above the Gihon Spring.", site: SITES[1] }, { date: "691 CE", title: "A golden sanctuary", desc: "The Dome of the Rock transforms Jerusalem's skyline.", site: SITES[0] }, { date: "1538 CE", title: "Walls around a city", desc: "Suleiman's walls frame the Old City that visitors know today.", site: SITES[2] }];
+  return <section className="timeline-section dark-section section-pad" id="timeline"><div className="page-width"><div className="story-kicker light-kicker"><span className="section-number">04</span><span className="rule" /><span>Explore through time</span></div><div className="timeline-head"><h2>Choose a moment.<br /><em>Step inside.</em></h2><p>History isn't a straight line. It's a city of overlapping moments, each still visible if you know where to look.</p></div><div className="timeline-layout"><div className="timeline-list">{periods.map((period, index) => <button className={`timeline-item ${active === index ? "active" : ""}`} key={period.date} onClick={() => setActive(index)}><span className="timeline-date">{period.date}</span><span className="timeline-title">{period.title}</span><span className="timeline-desc">{period.desc}</span><ArrowRight size={16} /></button>)}</div><div className="timeline-feature"><img src={periods[active].site.image} alt={periods[active].site.name} /><div className="timeline-feature-overlay" /><div className="timeline-feature-content"><StatusPill tone="light">Historical period</StatusPill><h3>{periods[active].site.name}</h3><button className="button button-gold" onClick={() => openSite(periods[active].site)}>Live in the past <Play size={15} fill="currentColor" /></button></div></div></div></div></section>;
+}
+
+function PassportSection() {
+  const badges = [{ icon: Compass, label: "First steps", detail: "Begin your journey", done: true }, { icon: Camera, label: "Jerusalem scanner", detail: "Scan a heritage site", done: true }, { icon: Radio, label: "Time traveler", detail: "Explore 3 periods", done: false }, { icon: RouteIcon, label: "Route explorer", detail: "Build a heritage route", done: false }];
+  return <section className="passport-section page-width section-pad" id="passport"><div className="passport-card"><div className="passport-intro"><div className="story-kicker"><span className="section-number">05</span><span className="rule" /><span>Your heritage passport</span></div><h2>Keep the<br /><em>story going.</em></h2><p>Every question, document, and discovery becomes part of your personal journey through Jerusalem.</p><Link href="/passport" className="text-button">Open passport <ArrowRight size={16} /></Link></div><div className="passport-progress"><div className="passport-top"><span>ATHAR / 001</span><span>2 of 6 badges</span></div><div className="progress-line"><span /></div><div className="badge-grid">{badges.map(({ icon: Icon, label, detail, done }) => <div className={`badge ${done ? "done" : ""}`} key={label}><div className="badge-icon"><Icon size={22} /></div><div><b>{label}</b><small>{detail}</small></div>{done && <Check size={16} />}</div>)}</div></div></div></section>;
+}
+
+function SourcesSection() {
+  return <section className="sources-section page-width section-pad" id="sources"><div className="sources-head"><div><div className="story-kicker"><span className="section-number">06</span><span className="rule" /><span>Open knowledge</span></div><h2>Stories with<br /><em>something behind them.</em></h2></div><p>ATHAR separates what is documented, interpreted, reconstructed, and translated—so you always know what you're seeing.</p></div><div className="sources-list">{SOURCES.map((source, index) => <div className="source-row" key={source.title}><span className="source-index">0{index + 1}</span><div className="source-main"><b>{source.title}</b><span>{source.institution}</span></div><span className="source-type">{source.type}</span><span className="source-date">{source.date}</span><ArrowUpRight size={18} /></div>)}</div><div className="transparency-legend"><span><i className="legend-dot verified" /> Verified fact</span><span><i className="legend-dot interpretation" /> Historical interpretation</span><span><i className="legend-dot generated" /> AI-generated reconstruction</span><span><i className="legend-dot translation" /> Machine translation</span></div></section>;
+}
+
+function Footer() {
+  return <footer className="footer dark-section"><div className="page-width"><div className="footer-top"><Brand dark /><div className="footer-note">Place × Time × Story<br /><span>An evolving archive of Jerusalem</span></div><div className="footer-social"><button onClick={() => toast("Instagram link ready in the production build")}>Instagram</button><button onClick={() => toast("Contact link ready in the production build")}>Contact</button></div></div><div className="footer-bottom"><span>© 2026 ATHAR AI</span><span>Built with respect for the record</span><span>Jerusalem · فلسطين / ישראל</span></div></div></footer>;
+}
+
+function ScanExperience({ close }: { close: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [streaming, setStreaming] = useState(false);
+  const [permissionError, setPermissionError] = useState(false);
+  const [demoFound, setDemoFound] = useState(false);
+  useEffect(() => {
+    let stream: MediaStream | undefined;
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }).then(value => { stream = value; setStreaming(true); if (videoRef.current) videoRef.current.srcObject = value; }).catch(() => setPermissionError(true));
+    return () => stream?.getTracks().forEach(track => track.stop());
+  }, []);
+  return <div className="scan-overlay"><div className="scan-modal"><div className="scan-top"><div><StatusPill tone="light">{demoFound ? "Demo match found" : "Demo mode · visual recognition"}</StatusPill><h2>{demoFound ? "You discovered:" : "Scan a Jerusalem site"}</h2>{demoFound && <h3>Dome of the Rock <span>قبة الصخرة</span></h3>}</div><button className="icon-button light" onClick={close} aria-label="Close scanner"><X size={22} /></button></div>{demoFound ? <div className="scan-result"><img src={IMG.dome} alt="Dome of the Rock" /><div className="scan-result-copy"><p className="eyebrow">Umayyad Jerusalem · 691 CE</p><p>Recognition is running in demo mode. This result is a guided prototype, not live computer vision.</p><div className="scan-result-actions"><Link href="/site/dome-of-the-rock" className="button button-gold" onClick={close}>Explore the site <ArrowRight size={16} /></Link><button className="button button-outline-light" onClick={() => setDemoFound(false)}>Scan again</button></div></div></div> : <><div className="camera-frame"><video ref={videoRef} autoPlay muted playsInline /><div className="camera-vignette" /><div className="scan-corners" /><div className="scan-beam" /><div className="camera-status">{permissionError ? <><Camera size={16} /> Camera access is required to scan a site.</> : streaming ? <><Radio size={16} /> Move closer to a heritage marker</> : <><LoaderIcon /> Preparing camera…</>}</div></div><div className="scan-controls"><button className="icon-button light"><Sun size={18} /></button><button className="scan-shutter" onClick={() => setDemoFound(true)} aria-label="Scan"><span><Camera size={24} /></span></button><button className="icon-button light"><RotateIcon /></button></div><div className="scan-disclaimer"><LockKeyhole size={13} /> Your camera stays on your device · Try demo recognition</div></>}</div></div>;
+}
+
+function LoaderIcon() { return <span className="loader-icon" />; }
+function RotateIcon() { return <span className="rotate-icon">↻</span>; }
+
+function SiteDetail({ site, close }: { site: Site; close: () => void }) {
+  const [tab, setTab] = useState<"past" | "story" | "history" | "ask">("past");
+  const [playing, setPlaying] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [era, setEra] = useState("Mamluk Jerusalem · c. 1350");
+  const isMamlukDocumentary = site.slug === "al-aqsa-mamluk";
+  const eraCopy = era === "Mamluk Jerusalem · c. 1350"
+    ? "A documentary window into the Mamluk period, when Jerusalem's sacred plateau was shaped by patrons, scholars, pilgrims, and artisans."
+    : era === "100 years ago · c. 1926"
+      ? "A recent historical comparison lens: Jerusalem approximately one century ago, before modern tourism transformed how the sacred plateau was approached and seen."
+      : "A near-present comparison lens from approximately one year ago, for noticing what has changed, what remains, and what the documentary helps you see differently.";
+  const submit = () => { if (!question.trim()) return; setAnswer(`Based on the available sources, ${site.name} is best understood as a layered place. The evidence points to a site whose meaning and built form changed across centuries; some details remain interpreted rather than certain. Explore the sources below to follow the record.`); };
+  return <div className="detail-overlay"><div className="detail-sheet"><button className="detail-close" onClick={close}><ChevronLeft size={18} /> Back to Jerusalem</button><div className="detail-hero"><img src={site.image} alt={site.name} /><div className="detail-hero-overlay" /><div className="detail-hero-copy"><StatusPill tone="light">{site.category} · {site.period}</StatusPill><h2>{site.name}</h2><p>{site.arabic} · {site.location}</p></div></div><div className="detail-tabs">{[["past", "Live in the past", Play], ["story", "Hear its story", Headphones], ["history", "Read history", BookOpen], ["ask", "Ask ATHAR", CircleHelp]].map(([key, label, Icon]) => <button key={key as string} className={tab === key ? "active" : ""} onClick={() => setTab(key as typeof tab)}>{Icon && <Icon size={16} />}{label as string}</button>)}</div><div className="detail-content">{tab === "past" && <div className="past-experience">{isMamlukDocumentary && <div className="era-lens"><div><p className="eyebrow">Choose a time lens</p><h3>See al-Aqsa across moments.</h3></div><div className="era-options">{["Mamluk Jerusalem · c. 1350", "100 years ago · c. 1926", "1 year ago · c. 2025"].map(value => <button key={value} className={era === value ? "active" : ""} onClick={() => setEra(value)}>{value}</button>)}</div></div>}<div className="past-video">
+{isMamlukDocumentary && era === "Mamluk Jerusalem · c. 1350" ? (
+  <video src={VIDEO.mamluk} controls playsInline preload="metadata" style={{ width: "100%", height: "100%" }} aria-label="Mamluk Jerusalem documentary" />
+) : site.slug === "western-wall-ottoman" ? (
+  <video src={VIDEO.westernWallOttoman} controls playsInline preload="metadata" style={{ width: "100%", height: "100%" }} aria-label="Western Wall in Ottoman Jerusalem documentary" />
+) : site.slug === "constantinian-jerusalem" ? (
+  <video src={VIDEO.constantinian} controls playsInline preload="metadata" style={{ width: "100%", height: "100%" }} aria-label="Constantinian Jerusalem documentary" />
+) : (
+  <img src={site.image} alt={`${site.name} historical comparison preview`} />
+)}
+<div className="past-video-wash" />
+<div className="video-caption">
+  <span>{isMamlukDocumentary && era === "Mamluk Jerusalem · c. 1350" ? "SUPPLIED DOCUMENTARY · MAMLUK JERUSALEM" : "HISTORICAL DOCUMENTARY"}</span>
+  <span>Playback controls enabled</span>
+</div>
+</div><div className="detail-copy-grid"><div><p className="eyebrow">The scene</p><h3>{isMamlukDocumentary ? era : "See a city in another moment."}</h3></div><div><p>{isMamlukDocumentary ? eraCopy : "This reconstruction is an interpretation based on available architectural, historical, and archaeological evidence. It is not an exact historical photograph."}</p><div className="tag-row"><span>Verified sources</span><span>{isMamlukDocumentary && era === "Mamluk Jerusalem · c. 1350" ? "Supplied documentary" : "Interpretation labeled"}</span><span>English · العربية</span></div></div></div></div>}{tab === "story" && <div className="audio-experience"><div className="audio-art"><img src={site.image} alt="Story cover" /><div className="audio-art-symbol"><Volume2 size={28} /></div></div><div className="audio-copy"><p className="eyebrow">A 04:32 audio story</p><h3>{site.name}: a place between moments</h3><p>“To stand here is to stand inside a conversation that began long before any one building…”</p><div className="audio-controls"><button className="round-play" onClick={() => setPlaying(!playing)}>{playing ? <span className="pause-bars">Ⅱ</span> : <Play size={17} fill="currentColor" />}</button><div className="audio-track"><span style={{ width: playing ? "42%" : "12%" }} /><i /></div><span>01:48 / 04:32</span></div><div className="transcript"><b>Transcript</b><p>English transcript available · Arabic translation available</p></div></div></div>}{tab === "history" && <div className="history-experience"><div className="history-intro"><StatusPill>VERIFIED FACT</StatusPill><h3>{site.fact}</h3><p>Read the evidence, browse related documents, and keep the distinction between record and interpretation visible.</p></div><div className="document-grid"><div className="document-card"><FileText size={19} /><b>Site brief</b><span>12 pages · English</span><ArrowUpRight size={16} /></div><div className="document-card"><BookOpen size={19} /><b>Source notes</b><span>8 references</span><ArrowUpRight size={16} /></div><div className="document-card"><Layers3 size={19} /><b>Timeline</b><span>3 periods</span><ArrowUpRight size={16} /></div></div></div>}{tab === "ask" && <div className="ask-experience"><div className="ask-header"><div className="ask-avatar">أ</div><div><p className="eyebrow">Grounded historical Q&A</p><h3>Ask ATHAR about {site.name}</h3></div></div><div className="ask-answer"><p>{answer || `Ask a question about the place, its people, architecture, or the evidence behind its story. ATHAR will show its sources.`}</p>{answer && <span className="answer-source"><ShieldCheck size={13} /> Answer grounded in 4 available sources</span>}</div><div className="ask-input"><input value={question} onChange={e => setQuestion(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="Why was this place built?" aria-label="Ask a question" /><button onClick={submit} aria-label="Send question"><Send size={17} /></button></div></div>}</div>
+{site.slug === "dome-of-the-rock" && (
+  <div className="related-experience">
+    <p className="eyebrow">Related historical experience</p>
+    <h3>Explore Al-Aqsa in Mamluk Jerusalem</h3>
+    <p>Step into Jerusalem across time with the Mamluk documentary and historical time lenses.</p>
+    <a className="button button-dark" href="/site/al-aqsa-mamluk">
+      Open the Al-Aqsa experience →
+    </a>
+  </div>
+)}
+<div className="detail-source-bar"><ShieldCheck size={15} /><span>Historical transparency is built in.</span><button onClick={() => setTab("history")}>View sources <ArrowRight size={14} /></button></div></div></div>;
+}
+
+function RoutePage() {
+  const [time, setTime] = useState("2 hours");
+  const [interest, setInterest] = useState("Architecture");
+  const stops = [SITES[0], SITES[2], SITES[1]];
+  return <div className="inner-page"><div className="page-width inner-intro"><StatusPill>Personalized route builder</StatusPill><h1>Build your<br /><em>heritage route.</em></h1><p>Tell us how much time you have and what you want to feel. ATHAR will connect the stops.</p></div><div className="page-width route-builder"><div className="route-form"><div className="form-label">I have</div><div className="option-row">{["30 min", "1 hour", "2 hours", "Half day"].map(value => <button className={time === value ? "selected" : ""} onClick={() => setTime(value)} key={value}>{value}</button>)}</div><div className="form-label">I'm drawn to</div><div className="option-row wrap">{["Architecture", "History", "Archaeology", "Stories", "Family friendly"].map(value => <button className={interest === value ? "selected" : ""} onClick={() => setInterest(value)} key={value}>{value}</button>)}</div><button className="button button-dark full-button" onClick={() => toast(`Route refreshed for ${time} · ${interest}`)}>Generate my route <Sparkles size={16} /></button></div><div className="route-result"><div className="route-result-top"><div><p className="eyebrow">Your suggested route</p><h2>Jerusalem in {time}</h2></div><StatusPill>3 stops · 2.4 km</StatusPill></div>{stops.map((stop, index) => <div className="route-stop" key={stop.slug}><span className="stop-number">0{index + 1}</span><img src={stop.image} alt={stop.name} /><div><b>{stop.name}</b><span>{index === 0 ? "Start here · 35 min" : index === 1 ? "Walk 0.8 km · 40 min" : "Walk 1.1 km · 45 min"}</span></div><ArrowRight size={16} /></div>)}</div></div></div>;
+}
+
+function AskPage() {
+  const [messages, setMessages] = useState([{ from: "athar", text: "Welcome. Ask me about Jerusalem's places, periods, people, and the evidence behind their stories." }]);
+  const [input, setInput] = useState("");
+  const send = () => { if (!input.trim()) return; const question = input; setInput(""); setMessages(m => [...m, { from: "you", text: question }, { from: "athar", text: "ATHAR's source-aware answer: Jerusalem is best understood as a layered place. I can help you explore a specific site, period, or document—but I will always distinguish documented facts from historical interpretation." }]); };
+  return <div className="inner-page ask-page"><div className="page-width inner-intro"><StatusPill>Ask ATHAR</StatusPill><h1>A better question<br /><em>opens a place.</em></h1><p>A source-aware guide to Jerusalem's architecture, histories, people, and unanswered questions.</p></div><div className="page-width chat-shell"><div className="chat-sources"><p className="eyebrow">Suggested sources</p>{SOURCES.slice(0, 3).map(source => <div className="chat-source" key={source.title}><ShieldCheck size={15} /><span>{source.institution}<b>{source.title}</b></span></div>)}</div><div className="chat-main"><div className="chat-messages">{messages.map((message, index) => <div className={`chat-message ${message.from}`} key={`${message.from}-${index}`}><div className="chat-avatar">{message.from === "athar" ? "أ" : <UserRound size={15} />}</div><div><span className="chat-name">{message.from === "athar" ? "ATHAR AI" : "You"}</span><p>{message.text}</p>{message.from === "athar" && <small><ShieldCheck size={12} /> Grounded in available sources</small>}</div></div>)}</div><div className="chat-composer"><input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder="Ask about a place, period, or person…" /><button onClick={send}><Send size={17} /></button></div></div></div></div>;
+}
+
+function PassportPage() {
+  return <div className="inner-page"><div className="page-width inner-intro passport-intro-page"><StatusPill>Heritage Passport</StatusPill><h1>Your journey,<br /><em>kept in the record.</em></h1><p>Discovery becomes memory. Your ATHAR passport grows as you move through Jerusalem.</p></div><div className="page-width passport-page-card"><div className="passport-seal">أ<br /><small>ATHAR</small></div><div><p className="eyebrow">Explorer profile · 001</p><h2>Jerusalem, one layer at a time.</h2><p>2 of 6 badges earned · 3 sites unlocked</p></div><div className="passport-page-stats"><div><b>03</b><span>sites</span></div><div><b>06</b><span>stories</span></div><div><b>02</b><span>badges</span></div></div></div><div className="page-width all-badges"><h2>Collect the layers</h2><div className="badge-grid large">{["Heritage Explorer", "History Seeker", "Jerusalem Scanner", "Time Traveler", "Route Explorer", "Heritage Challenge"].map((label, i) => <div className={`badge ${i < 2 ? "done" : ""}`} key={label}><div className="badge-icon"><Sparkles size={22} /></div><div><b>{label}</b><small>{i < 2 ? "Unlocked" : "Keep exploring"}</small></div>{i < 2 && <Check size={16} />}</div>)}</div></div></div>;
+}
+
+function TimelinePage({ openSite }: { openSite: (site: Site) => void }) {
+  return <div className="inner-page"><div className="page-width inner-intro"><StatusPill>Explore through time</StatusPill><h1>Jerusalem is not<br /><em>one moment.</em></h1><p>Choose a period grounded in evidence, then step into the architecture, streets, and stories of that time.</p></div><div className="page-width period-cards">{SITES.map((site, index) => <button className="period-card" key={site.slug} onClick={() => openSite(site)}><span className="period-index">0{index + 1}</span><img src={site.image} alt={site.name} /><div className="period-card-copy"><p>{site.period}</p><h2>{site.name}</h2><span>Explore period <ArrowRight size={15} /></span></div></button>)}</div></div>;
+}
+
+function AboutPage() {
+  return <div className="inner-page"><div className="page-width inner-intro"><StatusPill>Our approach</StatusPill><h1>Place × Time<br /><em>× Story.</em></h1><p>ATHAR is a cultural technology platform designed to make heritage feel present without making the record disappear.</p></div><div className="page-width about-grid"><div className="about-statement"><h2>We make the invisible visible—carefully.</h2><p>Every feature is built around a simple promise: distinguish what is known from what is imagined. Facts, interpretations, reconstructions, and translations carry their own labels.</p></div><div className="about-principles">{[[ShieldCheck, "Source first", "Answers should open a path back to evidence."], [Sparkles, "Imagination, labeled", "AI can help us see the past without pretending it is a photograph."], [Globe2, "Access for everyone", "Arabic and English are not an afterthought. They are part of the architecture."]].map(([Icon, title, copy]) => <div className="principle" key={title as string}><div className="principle-icon">{Icon && <Icon size={20} />}</div><div><h3>{title as string}</h3><p>{copy as string}</p></div></div>)}</div></div></div>;
+}
+
+
+function WebsiteRating() {
+  const [open, setOpen] = useState(false);
+  const [rating, setRating] = useState(() =>
+    Number(localStorage.getItem("athar-website-rating") || 0)
+  );
+  const [feedback, setFeedback] = useState(() =>
+    localStorage.getItem("athar-website-feedback") || ""
+  );
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    if (!rating) return;
+    localStorage.setItem("athar-website-rating", String(rating));
+    localStorage.setItem("athar-website-feedback", feedback);
+    setSaved(true);
+  };
+
+  return (
+    <>
+      <button
+        className="website-rating-trigger"
+        onClick={() => setOpen(true)}
+        aria-label="Rate the ATHAR website"
+      >
+        <span>★</span> Rate ATHAR
+      </button>
+
+      {open && (
+        <div
+          className="website-rating-backdrop"
+          onClick={() => setOpen(false)}
+        >
+          <section
+            className="website-rating-panel"
+            onClick={event => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="website-rating-title"
+          >
+            <button
+              className="website-rating-close"
+              onClick={() => setOpen(false)}
+              aria-label="Close rating"
+            >
+              ×
+            </button>
+
+            <p className="eyebrow">Your feedback matters</p>
+            <h2 id="website-rating-title">
+              How was your ATHAR experience?
+            </h2>
+
+            <p className="website-rating-intro">
+              Rate the whole website: exploration, stories, videos, navigation,
+              and design.
+            </p>
+
+            <div className="website-stars" aria-label="Rate from 1 to 5 stars">
+              {[1, 2, 3, 4, 5].map(value => (
+                <button
+                  key={value}
+                  type="button"
+                  className={value <= rating ? "selected" : ""}
+                  onClick={() => {
+                    setRating(value);
+                    setSaved(false);
+                  }}
+                  aria-label={value + " stars"}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              value={feedback}
+              onChange={event => {
+                setFeedback(event.target.value);
+                setSaved(false);
+              }}
+              placeholder="Tell us what you liked or what we can improve..."
+              aria-label="Website feedback"
+            />
+
+            <button
+              className="button button-dark website-rating-save"
+              onClick={save}
+              disabled={!rating}
+            >
+              {saved ? "Thank you - rating saved" : "Submit website rating"}
+            </button>
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
+export default function Home() {
+  const [location, navigate] = useLocation();
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [scanOpen, setScanOpen] = useState(location === "/scan");
+  const [selectedSite, setSelectedSite] = useState<Site | null>(null);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(location.startsWith("/site/") ? location.split("/")[2] : null);
+  const selectedFromRoute = useMemo(() => SITES.find(s => s.slug === selectedSlug) ?? null, [selectedSlug]);
+  useEffect(() => { setScanOpen(location === "/scan"); setSelectedSlug(location.startsWith("/site/") ? location.split("/")[2] : null); }, [location]);
+  const openSite = (site: Site) => { setSelectedSite(site); navigate(`/site/${site.slug}`); };
+  const closeSite = () => { setSelectedSite(null); setSelectedSlug(null); navigate("/explore"); };
+  const activeSite = selectedSite ?? selectedFromRoute;
+  const isHome = location === "/";
+  return <div className="app-shell"><Header onMenu={() => setMobileMenu(true)} /><WebsiteRating />{mobileMenu && <MobileMenu close={() => setMobileMenu(false)} />}{isHome && <><HomeHero /><StorySection /><ExploreSection openSite={openSite} /><MapSection openSite={openSite} /><TimelineSection openSite={openSite} /><PassportSection /><SourcesSection /></>}{location === "/explore" && <><div className="inner-page"><div className="page-width inner-intro"><StatusPill>Explore Jerusalem</StatusPill><h1>Find your way<br /><em>into the story.</em></h1><p>Three places to begin. Hundreds of years to uncover.</p></div><div className="page-width explore-page-grid">{SITES.map(site => <SiteCard key={site.slug} site={site} onOpen={() => openSite(site)} />)}</div></div><MapSection openSite={openSite} /></>}{location === "/timeline" && <TimelinePage openSite={openSite} />}{location === "/routes" && <RoutePage />}{location === "/passport" && <PassportPage />}{location === "/ask" && <AskPage />}{location === "/about" && <AboutPage />}{isHome && <Footer />}{scanOpen && <ScanExperience close={() => navigate("/")} />}{activeSite && <SiteDetail site={activeSite} close={closeSite} />}</div>;
+}
