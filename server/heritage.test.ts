@@ -1,6 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+
+vi.mock("./_core/llm", () => ({
+  invokeLLM: vi.fn(async () => ({
+    id: "test-response",
+    created: 0,
+    model: "gpt-5-mini",
+    choices: [{ index: 0, finish_reason: "stop", message: { role: "assistant", content: "Dome of the Rock is a layered place. VERIFIED FACT: its foundation inscription is among the earliest surviving examples of monumental Islamic epigraphy. HISTORICAL INTERPRETATION: its meaning has changed across centuries." } }],
+  })),
+}));
 
 const ctx = {
   user: null,
@@ -17,7 +26,7 @@ describe("heritage content API", () => {
     expect(sites.map(site => site.slug)).toContain("al-aqsa-mamluk");
   });
 
-  it("returns a source-aware answer for a site question", async () => {
+  it("returns a source-aware AI answer with navigation metadata", async () => {
     const answer = await appRouter.createCaller(ctx).heritage.ask({
       question: "Why does this place matter?",
       siteSlug: "dome-of-the-rock",
@@ -25,6 +34,7 @@ describe("heritage content API", () => {
     expect(answer.answer).toContain("Dome of the Rock");
     expect(answer.sources.length).toBeGreaterThan(0);
     expect(answer.transparency).toContain("VERIFIED FACT");
+    expect(answer.matchedSites[0]?.href).toBe("/site/dome-of-the-rock");
   });
 
   it("generates a route with all supported stops", async () => {

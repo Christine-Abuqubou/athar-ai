@@ -2132,3 +2132,7 @@ html[dir="rtl"] .text-button svg {
   }
 }
 
+
+/* Source citation cards added by ATHAR RAG */
+.citation-links { background: rgba(113,129,107,.08); border-left-color: var(--olive); }
+.citation-links .chat-link { font-size: 10px; }
